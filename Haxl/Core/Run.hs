@@ -42,6 +42,7 @@ import Haxl.Core.RequestStore as RequestStore
 import Haxl.Core.Stats
 import Haxl.Core.Util
 
+import qualified Data.HashTable.IO as H
 
 -- -----------------------------------------------------------------------------
 -- runHaxl
@@ -164,8 +165,9 @@ runHaxlWithWrites env@Env{..} haxl = do
           -- empty the cache if we're not caching.  Is this the best
           -- place to do it?  We do get to de-duplicate requests that
           -- happen simultaneously.
-          when (caching flags == 0) $
-            writeIORef cacheRef emptyDataCache
+          when (caching flags == 0) $ do
+            let DataCache dc = dataCache
+            H.foldM (\_ (k, _) -> H.delete dc k) () dc
           emptyRunQueue env{ pendingWaits = waits ++ pendingWaits }
 
     checkCompletions :: Env u w -> IO (JobList u w)
